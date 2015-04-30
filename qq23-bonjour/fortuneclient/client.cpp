@@ -21,12 +21,13 @@
 **
 ****************************************************************************/
 
+#include "client.h"
+
+#include <QGridLayout>
+#include <QMessageBox>
 #include <QtGui>
 #include <QtNetwork>
-
-#include "client.h"
-#include "bonjourservicebrowser.h"
-#include "bonjourserviceresolver.h"
+#include <QLabel>
 
 Client::Client(QWidget *parent)
     : QDialog(parent), bonjourResolver(0)
@@ -51,7 +52,7 @@ Client::Client(QWidget *parent)
     buttonBox->addButton(quitButton, QDialogButtonBox::RejectRole);
 
     tcpSocket = new QTcpSocket(this);
-
+    requestNewFortune();
     connect(getFortuneButton, SIGNAL(clicked()),
             this, SLOT(requestNewFortune()));
     connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
@@ -67,7 +68,8 @@ Client::Client(QWidget *parent)
 
     setWindowTitle(tr("Fortune Client"));
     treeWidget->setFocus();
-    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
+    //bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
+    bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
 }
 
 void Client::requestNewFortune()
@@ -161,6 +163,10 @@ void Client::updateRecords(const QList<BonjourRecord> &list)
     foreach (BonjourRecord record, list) {
         QVariant variant;
         variant.setValue(record);
+        qDebug() << "###########";
+        qDebug() << "type:" << record.registeredType;
+        qDebug() << "domain:" << record.replyDomain;
+        qDebug() << "serviceName:" << record.serviceName;
         QTreeWidgetItem *processItem = new QTreeWidgetItem(treeWidget,
                                                            QStringList() << record.serviceName);
         processItem->setData(0, Qt::UserRole, variant);

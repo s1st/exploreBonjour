@@ -24,18 +24,18 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include "bonjourrecord.h"
+#include "bonjourservicebrowser.h"
+#include "bonjourserviceresolver.h"
+
 #include <QDialog>
 #include <QTcpSocket>
-#include "bonjourrecord.h"
-
-class QDialogButtonBox;
-class QPushButton;
-class QTcpSocket;
-class QLabel;
-class QTreeWidget;
-class BonjourServiceBrowser;
-class BonjourServiceResolver;
-class QHostInfo;
+#include <QDialogButtonBox>
+#include <QPushButton>
+//class QTcpSocket;
+#include <QLabel>
+#include <QTreeWidget>
+#include <QHostInfo>
 class Client : public QDialog
 {
     Q_OBJECT

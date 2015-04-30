@@ -27,7 +27,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "bonjourservicebrowser.h"
-
 #include <QtCore/QSocketNotifier>
 
 BonjourServiceBrowser::BonjourServiceBrowser(QObject *parent)

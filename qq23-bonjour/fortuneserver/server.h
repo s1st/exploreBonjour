@@ -24,12 +24,12 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "bonjourserviceregister.h"
 #include <QDialog>
 
-class QLabel;
-class QPushButton;
-class QTcpServer;
-class BonjourServiceRegister;
+#include <QLabel>
+#include <QPushButton>
+#include <QTcpServer>
 
 class Server : public QDialog
 {

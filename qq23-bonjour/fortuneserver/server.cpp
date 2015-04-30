@@ -28,6 +28,9 @@
 
 #include "server.h"
 #include "bonjourserviceregister.h"
+#include "QMessageBox"
+#include "QHBoxLayout"
+
 Server::Server(QWidget *parent)
     : QDialog(parent)
 {
