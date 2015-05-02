@@ -23,14 +23,10 @@
 
 #include "client.h"
 
-#include <QGridLayout>
 #include <QMessageBox>
-#include <QtGui>
 #include <QtNetwork>
-#include <QLabel>
 
 Client::Client()
-    //:QObject(parent)
     :bonjourResolver(0)
 {
     _bonjourBrowser = new BonjourServiceBrowser(this);
@@ -39,11 +35,10 @@ Client::Client()
 
     tcpSocket = new QTcpSocket(this);
     allRecords = new QList<QVariant>;
-    requestNewFortune();
+//    requestNewFortune();
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
-    start();
 }
 
 Client::~Client()
@@ -55,34 +50,34 @@ int Client::start()
 {
 
     //    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
-    //    bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
-        QString s = _bonjourBrowser->serviceType();
-        _bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+        _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
 
-        //bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
-        //bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
+//        _bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+
+//        bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
+//        _bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
         //    bonjourBrowser->browseForServiceType(QLatin1String("_raop._tcp"));
         return 0;
 }
 
-void Client::requestNewFortune()
-{
-    blockSize = 0;
-    tcpSocket->abort();
-    if(allRecords->isEmpty())
-    {
-        return;
-    }
+//void Client::requestNewFortune()
+//{
+//    blockSize = 0;
+//    tcpSocket->abort();
+//    if(allRecords->isEmpty())
+//    {
+//        return;
+//    }
 
-    if (!bonjourResolver) {
-        bonjourResolver = new BonjourServiceResolver(this);
-        connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
-                this, SLOT(connectToServer(const QHostInfo &, int)));
-    }
-//    QTreeWidgetItem *item = selectedItems.at(0);
-    QVariant variant = allRecords->at(0);
-    bonjourResolver->resolveBonjourRecord(variant.value<BonjourRecord>());
-}
+//    if (!bonjourResolver) {
+//        bonjourResolver = new BonjourServiceResolver(this);
+//        connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
+//                this, SLOT(connectToServer(const QHostInfo &, int)));
+//    }
+////    QTreeWidgetItem *item = selectedItems.at(0);
+//    QVariant variant = allRecords->at(0);
+//    bonjourResolver->resolveBonjourRecord(variant.value<BonjourRecord>());
+//}
 
 void Client::connectToServer(const QHostInfo &hostInfo, int port)
 {
@@ -160,16 +155,8 @@ void Client::updateRecords(const QList<BonjourRecord> &list)
         qDebug() << "type:" << record.registeredType;
         qDebug() << "domain:" << record.replyDomain;
         qDebug() << "serviceName:" << record.serviceName;
-//        QTreeWidgetItem *processItem = new QTreeWidgetItem(treeWidget,
-//                                                           QStringList() << record.serviceName);
         allRecords->append(variant);
-//        processItem->setData(0, Qt::UserRole, variant);
     }
-    
-//    if (treeWidget->invisibleRootItem()->childCount() > 0) {
-//        treeWidget->invisibleRootItem()->child(0)->setSelected(true);
-//    }
-    //QTreeWidgetItem *item = selectedItems.at(0);
     if (!bonjourResolver) {
         bonjourResolver = new BonjourServiceResolver(this);
         connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),

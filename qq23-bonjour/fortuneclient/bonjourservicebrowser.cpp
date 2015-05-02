@@ -63,7 +63,6 @@ void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
 void BonjourServiceBrowser::bonjourSocketReadyRead()
 {
     DNSServiceErrorType err = DNSServiceProcessResult(dnssref);
-    //char * txt = dnssref->service_txt;
     if (err != kDNSServiceErr_NoError)
         emit error(err);
 }

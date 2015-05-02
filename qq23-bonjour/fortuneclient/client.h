@@ -28,12 +28,7 @@
 #include "bonjourservicebrowser.h"
 #include "bonjourserviceresolver.h"
 
-#include <QDialog>
 #include <QTcpSocket>
-#include <QDialogButtonBox>
-#include <QPushButton>
-#include <QLabel>
-#include <QTreeWidget>
 #include <QHostInfo>
 class Client: public QObject
 {
@@ -47,7 +42,6 @@ public:
 
 private slots:
     void updateRecords(const QList<BonjourRecord> &list);
-    void requestNewFortune();
     void readFortune();
     void displayError(QAbstractSocket::SocketError socketError);
     void enableGetFortuneButton();
@@ -59,7 +53,6 @@ private:
     quint16 blockSize;
     BonjourServiceBrowser *_bonjourBrowser;
     BonjourServiceResolver *bonjourResolver;
-    QTreeWidget *treeWidget; //TODO make this a list of qvariants
     QList<QVariant> * allRecords;
 };
 
