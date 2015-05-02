@@ -57,7 +57,7 @@ private:
     QTcpSocket *tcpSocket;
     QString currentFortune;
     quint16 blockSize;
-    BonjourServiceBrowser *bonjourBrowser;
+    BonjourServiceBrowser *_bonjourBrowser;
     BonjourServiceResolver *bonjourResolver;
     QTreeWidget *treeWidget; //TODO make this a list of qvariants
     QList<QVariant> * allRecords;

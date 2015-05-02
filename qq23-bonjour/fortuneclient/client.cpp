@@ -33,9 +33,8 @@ Client::Client()
     //:QObject(parent)
     :bonjourResolver(0)
 {
-    BonjourServiceBrowser *bonjourBrowser = new BonjourServiceBrowser(this);
-    
-    connect(bonjourBrowser, SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)),
+    _bonjourBrowser = new BonjourServiceBrowser(this);
+    connect(_bonjourBrowser, SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)),
             this, SLOT(updateRecords(const QList<BonjourRecord> &)));
 
     tcpSocket = new QTcpSocket(this);
@@ -44,6 +43,7 @@ Client::Client()
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
+    start();
 }
 
 Client::~Client()
@@ -56,7 +56,8 @@ int Client::start()
 
     //    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
     //    bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
-        bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+        QString s = _bonjourBrowser->serviceType();
+        _bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
 
         //bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
         //bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
@@ -93,11 +94,11 @@ void Client::connectToServer(const QHostInfo &hostInfo, int port)
 void Client::readFortune()
 {
     //TODO delete
-//    QDataStream in(tcpSocket);
-//    in.setVersion(QDataStream::Qt_4_0);
+    //    QDataStream in(tcpSocket);
+    //    in.setVersion(QDataStream::Qt_4_0);
 
-//    if (blockSize == 0) {
-//        if (tcpSocket->bytesAvailable() < (int)sizeof(quint16))
+    //    if (blockSize == 0) {
+    //        if (tcpSocket->bytesAvailable() < (int)sizeof(quint16))
 //            return;
 
 //        in >> blockSize;
