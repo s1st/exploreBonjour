@@ -25,6 +25,7 @@
 
 #include <QMessageBox>
 #include <QtNetwork>
+#include <QTimer>
 
 Client::Client()
     :bonjourResolver(0)
@@ -32,10 +33,11 @@ Client::Client()
     _bonjourBrowser = new BonjourServiceBrowser(this);
     connect(_bonjourBrowser, SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)),
             this, SLOT(updateRecords(const QList<BonjourRecord> &)));
+    connect(_bonjourBrowser, SIGNAL(error(DNSServiceErrorType)), _bonjourBrowser, SLOT(handleError(DNSServiceErrorType)));
+    connect(bonjourResolver, SIGNAL(error(DNSServiceErrorType)), bonjourResolver, SLOT(handleError(DNSServiceErrorType)));
 
     tcpSocket = new QTcpSocket(this);
     allRecords = new QList<QVariant>;
-//    requestNewFortune();
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
@@ -48,8 +50,12 @@ Client::~Client()
 
 int Client::start()
 {
+    _timer = new QTimer(this);
+    connect(_timer, SIGNAL(timeout()), this, SLOT(checkResults()));
+    _timer->start(_interval);
 
     //    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
+
         _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
 
 //        _bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
@@ -84,6 +90,15 @@ void Client::connectToServer(const QHostInfo &hostInfo, int port)
     const QList<QHostAddress> &addresses = hostInfo.addresses();
     if (!addresses.isEmpty())
         tcpSocket->connectToHost(addresses.first(), port);
+}
+
+void Client::checkResults()
+{
+    qDebug() << "results after" << _interval << "milliseconds";
+    if(!_bonjourBrowser->bonjourRecords.isEmpty())
+    {
+        _bonjourBrowser->browseForFoundServiceTypes();
+    }
 }
 
 void Client::readFortune()

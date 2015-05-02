@@ -30,6 +30,7 @@
 
 #include <QTcpSocket>
 #include <QHostInfo>
+#include <QTimer>
 class Client: public QObject
 {
     Q_OBJECT
@@ -39,15 +40,17 @@ public:
     ~Client();
 
     int start();
-
+    static const int _interval = 10000;
 private slots:
     void updateRecords(const QList<BonjourRecord> &list);
     void readFortune();
     void displayError(QAbstractSocket::SocketError socketError);
     void enableGetFortuneButton();
     void connectToServer(const QHostInfo &hostInfo, int);
+    void checkResults();
 
 private:
+    QTimer *_timer;
     QTcpSocket *tcpSocket;
     QString currentFortune;
     quint16 blockSize;

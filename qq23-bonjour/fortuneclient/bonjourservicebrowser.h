@@ -43,13 +43,17 @@ public:
     void browseForServiceType(const QString &serviceType);
     inline QList<BonjourRecord> currentRecords() const { return bonjourRecords; }
     inline QString serviceType() const { return browsingType; }
+    int browseForFoundServiceTypes();
+    QList<BonjourRecord> bonjourRecords;
 
 signals:
     void currentBonjourRecordsChanged(const QList<BonjourRecord> &list);
     void error(DNSServiceErrorType err);
 
 private slots:
+
     void bonjourSocketReadyRead();
+    void handleError(DNSServiceErrorType err);
 
 private:
     static void DNSSD_API bonjourBrowseReply(DNSServiceRef , DNSServiceFlags flags, quint32,
@@ -57,7 +61,6 @@ private:
                                    const char *regType, const char *replyDomain, void *context);
     DNSServiceRef dnssref;
     QSocketNotifier *bonjourSocket;
-    QList<BonjourRecord> bonjourRecords;
     QString browsingType;
 };
 

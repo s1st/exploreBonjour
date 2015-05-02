@@ -71,7 +71,6 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
                                                      //(DNSServiceQueryRecordReply)bonjourQueryRecordReply, this);
     if (err != kDNSServiceErr_NoError) {
         qDebug() << "error: " << err;
-        emit test();
         emit error(err);
     } else {
         int sockfd = DNSServiceRefSockFD(dnssref);
@@ -122,4 +121,9 @@ void BonjourServiceResolver::finishConnect(const QHostInfo &hostInfo)
     qDebug() << "Found this name: " << name;
     emit bonjourRecordResolved(hostInfo, bonjourPort);
     QMetaObject::invokeMethod(this, "cleanupResolve", Qt::QueuedConnection);
+}
+
+void BonjourServiceResolver::handleError(DNSServiceErrorType err)
+{
+    qDebug() << "Resolver -- handling following error: " << err;
 }

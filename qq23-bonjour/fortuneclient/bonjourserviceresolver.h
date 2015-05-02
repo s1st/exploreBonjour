@@ -50,12 +50,12 @@ public:
 signals:
     void bonjourRecordResolved(const QHostInfo &hostInfo, int port);
     void error(DNSServiceErrorType error);
-    void test();
 
 private slots:
     void bonjourSocketReadyRead();
     void cleanupResolve();
     void finishConnect(const QHostInfo &hostInfo);
+    void handleError(DNSServiceErrorType err);
 
 private:
     static void DNSSD_API bonjourResolveReply(DNSServiceRef sdRef, DNSServiceFlags flags,

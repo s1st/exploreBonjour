@@ -28,6 +28,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "bonjourservicebrowser.h"
 #include <QtCore/QSocketNotifier>
+#include <QDebug>
 
 BonjourServiceBrowser::BonjourServiceBrowser(QObject *parent)
     : QObject(parent), dnssref(0), bonjourSocket(0)
@@ -60,11 +61,29 @@ void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
     }
 }
 
+int BonjourServiceBrowser::browseForFoundServiceTypes()
+{
+    QString type = bonjourRecords.at(0).registeredType;
+    QString dom = bonjourRecords.at(0).replyDomain;
+    QString service = bonjourRecords.at(0).serviceName;
+    if(type.endsWith("."))
+    {
+        type.chop(1);
+    }
+    service.append(".").append(type);
+    browseForServiceType(service);
+}
+
 void BonjourServiceBrowser::bonjourSocketReadyRead()
 {
     DNSServiceErrorType err = DNSServiceProcessResult(dnssref);
     if (err != kDNSServiceErr_NoError)
         emit error(err);
+}
+
+void BonjourServiceBrowser::handleError(DNSServiceErrorType err)
+{
+    qDebug() << "Browser -- handling following error: " << err;
 }
 
 void BonjourServiceBrowser::bonjourBrowseReply(DNSServiceRef , DNSServiceFlags flags,
