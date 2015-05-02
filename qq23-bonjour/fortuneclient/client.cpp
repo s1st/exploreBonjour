@@ -68,8 +68,18 @@ Client::Client(QWidget *parent)
 
     setWindowTitle(tr("Fortune Client"));
     treeWidget->setFocus();
-    //bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
-    bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
+//    if (!bonjourResolver) {
+//        bonjourResolver = new BonjourServiceResolver(this);
+//        connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
+//                this, SLOT(connectToServer(const QHostInfo &, int)));
+//    }
+//    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
+    bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
+//    bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+
+    //bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
+    //bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
+//    bonjourBrowser->browseForServiceType(QLatin1String("_raop._tcp"));
 }
 
 void Client::requestNewFortune()
@@ -160,9 +170,11 @@ void Client::enableGetFortuneButton()
 void Client::updateRecords(const QList<BonjourRecord> &list)
 {
     treeWidget->clear();
+    QList<QVariant> vars;
     foreach (BonjourRecord record, list) {
         QVariant variant;
         variant.setValue(record);
+        vars.append(variant);
         qDebug() << "###########";
         qDebug() << "type:" << record.registeredType;
         qDebug() << "domain:" << record.replyDomain;
@@ -175,5 +187,13 @@ void Client::updateRecords(const QList<BonjourRecord> &list)
     if (treeWidget->invisibleRootItem()->childCount() > 0) {
         treeWidget->invisibleRootItem()->child(0)->setSelected(true);
     }
+    //QTreeWidgetItem *item = selectedItems.at(0);
+    if (!bonjourResolver) {
+        bonjourResolver = new BonjourServiceResolver(this);
+        connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
+                this, SLOT(connectToServer(const QHostInfo &, int)));
+    }
+    QVariant variant = vars.at(0);
+    bonjourResolver->resolveBonjourRecord(variant.value<BonjourRecord>());
     enableGetFortuneButton();
 }

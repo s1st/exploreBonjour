@@ -63,6 +63,13 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
                                                 record.registeredType.toUtf8().constData(),
                                                 record.replyDomain.toUtf8().constData(),
                                                 (DNSServiceResolveReply)bonjourResolveReply, this);
+    qDebug() << err;
+    //dnssref->service_txt;
+//    DNSServiceErrorType err2 = DNSServiceQueryRecord(&dnssref, 0, 0,
+//                                                     record.serviceName.toUtf8().constData(),
+//                                                     kDNSServiceType_PTR, kDNSServiceClass_IN,
+//                                                     (DNSServiceQueryRecordReply)bonjourResolveReply, this);
+                                                     //(DNSServiceQueryRecordReply)bonjourQueryRecordReply, this);
     if (err != kDNSServiceErr_NoError) {
         emit error(err);
     } else {
@@ -107,5 +114,11 @@ void BonjourServiceResolver::bonjourResolveReply(DNSServiceRef, DNSServiceFlags 
 void BonjourServiceResolver::finishConnect(const QHostInfo &hostInfo)
 {
     emit bonjourRecordResolved(hostInfo, bonjourPort);
+    QString name = hostInfo.hostName();
+    QString domain = hostInfo.localDomainName();
+    QString localName = hostInfo.localHostName();
+    int lookupID = hostInfo.lookupId();
+    QList<QHostAddress> addr = hostInfo.addresses();
+    qDebug() << "Found this name: " << name;
     QMetaObject::invokeMethod(this, "cleanupResolve", Qt::QueuedConnection);
 }

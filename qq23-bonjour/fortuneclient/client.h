@@ -62,7 +62,7 @@ private:
     quint16 blockSize;
     BonjourServiceBrowser *bonjourBrowser;
     BonjourServiceResolver *bonjourResolver;
-    QTreeWidget *treeWidget;
+    QTreeWidget *treeWidget; //TODO make this a list of qvariants
 };
 
 #endif

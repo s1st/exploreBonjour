@@ -1,5 +1,6 @@
 HEADERS       = server.h \
-                bonjourserviceregister.h
+		bonjourserviceregister.h \
+		bonjourrecord.h
 SOURCES       = server.cpp \
                 main.cpp \
                 bonjourserviceregister.cpp

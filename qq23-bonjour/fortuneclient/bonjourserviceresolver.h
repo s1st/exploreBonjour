@@ -61,6 +61,21 @@ private:
                                     quint32 interfaceIndex, DNSServiceErrorType errorCode,
                                     const char *fullName, const char *hosttarget, quint16 port,
                                     quint16 txtLen, const char *txtRecord, void *context);
+    //TODO
+    /*static void DNSSD_API *bonjourQueryRecordReply
+    (
+    DNSServiceRef                       DNSServiceRef,
+    DNSServiceFlags                     flags,
+    uint32_t                            interfaceIndex,
+    DNSServiceErrorType                 errorCode,
+    const char                          *fullname,
+    uint16_t                            rrtype,
+    uint16_t                            rrclass,
+    uint16_t                            rdlen,
+    const void                          *rdata,
+    uint32_t                            ttl,
+    void                                *context
+    );*/
     DNSServiceRef dnssref;
     QSocketNotifier *bonjourSocket;
     int bonjourPort;
