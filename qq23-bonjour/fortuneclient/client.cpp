@@ -34,48 +34,19 @@ Client::Client(QWidget *parent)
 {
     BonjourServiceBrowser *bonjourBrowser = new BonjourServiceBrowser(this);
     
-    statusLabel = new QLabel("This examples requires that you run the "
-                                "Fortune Server example as well.");
-
-    treeWidget = new QTreeWidget(this);
-    treeWidget->setHeaderLabels(QStringList() << tr("Available Fortune Servers"));
     connect(bonjourBrowser, SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)),
             this, SLOT(updateRecords(const QList<BonjourRecord> &)));
-    getFortuneButton = new QPushButton(tr("Get Fortune"));
-    getFortuneButton->setDefault(true);
-    getFortuneButton->setEnabled(false);
-
-    quitButton = new QPushButton(tr("Quit"));
-
-    buttonBox = new QDialogButtonBox;
-    buttonBox->addButton(getFortuneButton, QDialogButtonBox::ActionRole);
-    buttonBox->addButton(quitButton, QDialogButtonBox::RejectRole);
 
     tcpSocket = new QTcpSocket(this);
+    allRecords = new QList<QVariant>;
     requestNewFortune();
-    connect(getFortuneButton, SIGNAL(clicked()),
-            this, SLOT(requestNewFortune()));
-    connect(quitButton, SIGNAL(clicked()), this, SLOT(close()));
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
 
-    QGridLayout *mainLayout = new QGridLayout;
-    mainLayout->addWidget(treeWidget, 0, 0, 2, 2);
-    mainLayout->addWidget(statusLabel, 2, 0, 1, 2);
-    mainLayout->addWidget(buttonBox, 3, 0, 1, 2);
-    setLayout(mainLayout);
-
-    setWindowTitle(tr("Fortune Client"));
-    treeWidget->setFocus();
-//    if (!bonjourResolver) {
-//        bonjourResolver = new BonjourServiceResolver(this);
-//        connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
-//                this, SLOT(connectToServer(const QHostInfo &, int)));
-//    }
 //    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
-    bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
-//    bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+//    bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
+    bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
 
     //bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
     //bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
@@ -84,20 +55,20 @@ Client::Client(QWidget *parent)
 
 void Client::requestNewFortune()
 {
-    getFortuneButton->setEnabled(false);
     blockSize = 0;
     tcpSocket->abort();
-    QList<QTreeWidgetItem *> selectedItems = treeWidget->selectedItems();
-    if (selectedItems.isEmpty())
+    if(allRecords->isEmpty())
+    {
         return;
+    }
 
     if (!bonjourResolver) {
         bonjourResolver = new BonjourServiceResolver(this);
         connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
                 this, SLOT(connectToServer(const QHostInfo &, int)));
     }
-    QTreeWidgetItem *item = selectedItems.at(0);
-    QVariant variant = item->data(0, Qt::UserRole);
+//    QTreeWidgetItem *item = selectedItems.at(0);
+    QVariant variant = allRecords->at(0);
     bonjourResolver->resolveBonjourRecord(variant.value<BonjourRecord>());
 }
 
@@ -110,30 +81,31 @@ void Client::connectToServer(const QHostInfo &hostInfo, int port)
 
 void Client::readFortune()
 {
-    QDataStream in(tcpSocket);
-    in.setVersion(QDataStream::Qt_4_0);
+    //TODO delete
+//    QDataStream in(tcpSocket);
+//    in.setVersion(QDataStream::Qt_4_0);
 
-    if (blockSize == 0) {
-        if (tcpSocket->bytesAvailable() < (int)sizeof(quint16))
-            return;
+//    if (blockSize == 0) {
+//        if (tcpSocket->bytesAvailable() < (int)sizeof(quint16))
+//            return;
 
-        in >> blockSize;
-    }
+//        in >> blockSize;
+//    }
 
-    if (tcpSocket->bytesAvailable() < blockSize)
-        return;
+//    if (tcpSocket->bytesAvailable() < blockSize)
+//        return;
 
-    QString nextFortune;
-    in >> nextFortune;
+//    QString nextFortune;
+//    in >> nextFortune;
 
-    if (nextFortune == currentFortune) {
-        QTimer::singleShot(0, this, SLOT(requestNewFortune()));
-        return;
-    }
+//    if (nextFortune == currentFortune) {
+//        QTimer::singleShot(0, this, SLOT(requestNewFortune()));
+//        return;
+//    }
 
-    currentFortune = nextFortune;
-    statusLabel->setText(currentFortune);
-    getFortuneButton->setEnabled(true);
+//    currentFortune = nextFortune;
+//    statusLabel->setText(currentFortune);
+//    getFortuneButton->setEnabled(true);
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
@@ -142,34 +114,31 @@ void Client::displayError(QAbstractSocket::SocketError socketError)
     case QAbstractSocket::RemoteHostClosedError:
         break;
     case QAbstractSocket::HostNotFoundError:
-        QMessageBox::information(this, tr("Fortune Client"),
-                                 tr("The host was not found. Please check the "
-                                    "host name and port settings."));
+        qDebug() << "The host was not found. Please check the "
+                                    "host name and port settings.";
         break;
     case QAbstractSocket::ConnectionRefusedError:
-        QMessageBox::information(this, tr("Fortune Client"),
-                                 tr("The connection was refused by the peer. "
+        qDebug() << "The connection was refused by the peer. "
                                     "Make sure the fortune server is running, "
                                     "and check that the host name and port "
-                                    "settings are correct."));
+                                    "settings are correct.";
         break;
     default:
-        QMessageBox::information(this, tr("Fortune Client"),
-                                 tr("The following error occurred: %1.")
-                                 .arg(tcpSocket->errorString()));
+        qDebug() << "The following error occurred: %1."
+                                 << tcpSocket->errorString();
     }
 
-    getFortuneButton->setEnabled(true);
+    //getFortuneButton->setEnabled(true);
 }
 
 void Client::enableGetFortuneButton()
 {
-    getFortuneButton->setEnabled(treeWidget->invisibleRootItem()->childCount() != 0);
+//    getFortuneButton->setEnabled(treeWidget->invisibleRootItem()->childCount() != 0);
+    //TODO delete
 }
 
 void Client::updateRecords(const QList<BonjourRecord> &list)
 {
-    treeWidget->clear();
     QList<QVariant> vars;
     foreach (BonjourRecord record, list) {
         QVariant variant;
@@ -179,14 +148,15 @@ void Client::updateRecords(const QList<BonjourRecord> &list)
         qDebug() << "type:" << record.registeredType;
         qDebug() << "domain:" << record.replyDomain;
         qDebug() << "serviceName:" << record.serviceName;
-        QTreeWidgetItem *processItem = new QTreeWidgetItem(treeWidget,
-                                                           QStringList() << record.serviceName);
-        processItem->setData(0, Qt::UserRole, variant);
+//        QTreeWidgetItem *processItem = new QTreeWidgetItem(treeWidget,
+//                                                           QStringList() << record.serviceName);
+        allRecords->append(variant);
+//        processItem->setData(0, Qt::UserRole, variant);
     }
     
-    if (treeWidget->invisibleRootItem()->childCount() > 0) {
-        treeWidget->invisibleRootItem()->child(0)->setSelected(true);
-    }
+//    if (treeWidget->invisibleRootItem()->childCount() > 0) {
+//        treeWidget->invisibleRootItem()->child(0)->setSelected(true);
+//    }
     //QTreeWidgetItem *item = selectedItems.at(0);
     if (!bonjourResolver) {
         bonjourResolver = new BonjourServiceResolver(this);

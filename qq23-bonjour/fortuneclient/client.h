@@ -63,6 +63,7 @@ private:
     BonjourServiceBrowser *bonjourBrowser;
     BonjourServiceResolver *bonjourResolver;
     QTreeWidget *treeWidget; //TODO make this a list of qvariants
+    QList<QVariant> * allRecords;
 };
 
 #endif
