@@ -32,16 +32,18 @@
 #include <QTcpSocket>
 #include <QDialogButtonBox>
 #include <QPushButton>
-//class QTcpSocket;
 #include <QLabel>
 #include <QTreeWidget>
 #include <QHostInfo>
-class Client : public QDialog
+class Client: public QObject
 {
     Q_OBJECT
 
 public:
-    Client(QWidget *parent = 0);
+    Client();
+    ~Client();
+
+    int start();
 
 private slots:
     void updateRecords(const QList<BonjourRecord> &list);
@@ -52,11 +54,6 @@ private slots:
     void connectToServer(const QHostInfo &hostInfo, int);
 
 private:
-    QLabel *statusLabel;
-    QPushButton *getFortuneButton;
-    QPushButton *quitButton;
-    QDialogButtonBox *buttonBox;
-
     QTcpSocket *tcpSocket;
     QString currentFortune;
     quint16 blockSize;

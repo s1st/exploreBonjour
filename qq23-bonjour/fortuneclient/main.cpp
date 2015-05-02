@@ -21,14 +21,14 @@
 **
 ****************************************************************************/
 
-#include <QApplication>
+#include <QCoreApplication>
 
 #include "client.h"
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
+    QCoreApplication app(argc, argv);
     Client client;
-    client.show();
-    return client.exec();
+    client.start();
+    return app.exec();
 }

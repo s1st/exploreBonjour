@@ -29,8 +29,9 @@
 #include <QtNetwork>
 #include <QLabel>
 
-Client::Client(QWidget *parent)
-    : QDialog(parent), bonjourResolver(0)
+Client::Client()
+    //:QObject(parent)
+    :bonjourResolver(0)
 {
     BonjourServiceBrowser *bonjourBrowser = new BonjourServiceBrowser(this);
     
@@ -43,14 +44,24 @@ Client::Client(QWidget *parent)
     connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
     connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(displayError(QAbstractSocket::SocketError)));
+}
 
-//    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
-//    bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
-    bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+Client::~Client()
+{
 
-    //bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
-    //bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
-//    bonjourBrowser->browseForServiceType(QLatin1String("_raop._tcp"));
+}
+
+int Client::start()
+{
+
+    //    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
+    //    bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
+        bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+
+        //bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
+        //bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
+        //    bonjourBrowser->browseForServiceType(QLatin1String("_raop._tcp"));
+        return 0;
 }
 
 void Client::requestNewFortune()
