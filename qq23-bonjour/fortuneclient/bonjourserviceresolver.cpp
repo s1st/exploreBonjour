@@ -58,19 +58,21 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
         qWarning("resolve in process, aborting");
         return;
     }
+    qDebug() << "resolving record:" << record.registeredType << record.replyDomain << record.serviceName;
+    qDebug() << "dnssref:" << dnssref;
     DNSServiceErrorType err = DNSServiceResolve(&dnssref, 0, 0,
                                                 record.serviceName.toUtf8().constData(),
                                                 record.registeredType.toUtf8().constData(),
                                                 record.replyDomain.toUtf8().constData(),
                                                 (DNSServiceResolveReply)bonjourResolveReply, this);
-    //dnssref->service_txt;
-//    DNSServiceErrorType err2 = DNSServiceQueryRecord(&dnssref, 0, 0,
+//TODO maybe
+    //    DNSServiceErrorType err2 = DNSServiceQueryRecord(&dnssref, 0, 0,
 //                                                     record.serviceName.toUtf8().constData(),
 //                                                     kDNSServiceType_PTR, kDNSServiceClass_IN,
 //                                                     (DNSServiceQueryRecordReply)bonjourResolveReply, this);
                                                      //(DNSServiceQueryRecordReply)bonjourQueryRecordReply, this);
     if (err != kDNSServiceErr_NoError) {
-        qDebug() << "error: " << err;
+        qDebug() << "kDNSServiceErr: " << err;
         emit error(err);
     } else {
         int sockfd = DNSServiceRefSockFD(dnssref);
@@ -107,6 +109,7 @@ void BonjourServiceResolver::bonjourResolveReply(DNSServiceRef, DNSServiceFlags 
         }
 #endif
     serviceResolver->bonjourPort = port;
+    qDebug() << "hosttarget: " << hosttarget;
     QHostInfo::lookupHost(QString::fromUtf8(hosttarget),
                           serviceResolver, SLOT(finishConnect(const QHostInfo &)));
 }
@@ -119,7 +122,7 @@ void BonjourServiceResolver::finishConnect(const QHostInfo &hostInfo)
     int lookupID = hostInfo.lookupId();
     QList<QHostAddress> addr = hostInfo.addresses();
     qDebug() << "Found this name: " << name;
-    emit bonjourRecordResolved(hostInfo, bonjourPort);
+    emit bonjourRecordResolved(hostInfo);
     QMetaObject::invokeMethod(this, "cleanupResolve", Qt::QueuedConnection);
 }
 

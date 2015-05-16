@@ -40,14 +40,20 @@ public:
     ~Client();
 
     int start();
-    static const int _interval = 10000;
+    static const int _interval = 5000;
+
 private slots:
     void updateRecords(const QList<BonjourRecord> &list);
-    void readFortune();
     void displayError(QAbstractSocket::SocketError socketError);
-    void enableGetFortuneButton();
-    void connectToServer(const QHostInfo &hostInfo, int);
+    void listHosts(const QHostInfo &hostInfo);
     void checkResults();
+    void handleDevice(QString device, BonjourRecord br);
+    void handleDeviceClass(QString deviceClass);
+
+signals:
+    void foundDeviceClass(QString deviceClass);
+    void foundDevice(QString device, BonjourRecord br);
+    void hostFound();
 
 private:
     QTimer *_timer;
@@ -55,8 +61,9 @@ private:
     QString currentFortune;
     quint16 blockSize;
     BonjourServiceBrowser *_bonjourBrowser;
-    BonjourServiceResolver *bonjourResolver;
+    BonjourServiceResolver *_bonjourResolver;
     QList<QVariant> * allRecords;
+    int _counter;
 };
 
 #endif

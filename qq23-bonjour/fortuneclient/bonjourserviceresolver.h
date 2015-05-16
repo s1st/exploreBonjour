@@ -48,12 +48,14 @@ public:
     void resolveBonjourRecord(const BonjourRecord &record);
 
 signals:
-    void bonjourRecordResolved(const QHostInfo &hostInfo, int port);
+    void bonjourRecordResolved(const QHostInfo &hostInfo);
     void error(DNSServiceErrorType error);
 
+public slots:
+
 private slots:
-    void bonjourSocketReadyRead();
     void cleanupResolve();
+    void bonjourSocketReadyRead();
     void finishConnect(const QHostInfo &hostInfo);
     void handleError(DNSServiceErrorType err);
 

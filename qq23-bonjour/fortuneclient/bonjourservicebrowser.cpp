@@ -45,9 +45,10 @@ BonjourServiceBrowser::~BonjourServiceBrowser()
 
 void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
 {
-
+    qDebug() << "browsing for service:" << serviceType;
     DNSServiceErrorType err = DNSServiceBrowse(&dnssref, 0, 0, serviceType.toUtf8().constData(), 0,
                                                bonjourBrowseReply, this);
+    qDebug() << "err:" << err;
     if (err != kDNSServiceErr_NoError) {
         emit error(err);
     } else {
@@ -61,17 +62,37 @@ void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
     }
 }
 
-int BonjourServiceBrowser::browseForFoundServiceTypes()
+void BonjourServiceBrowser::browseForFoundServiceTypes(int counter)
 {
-    QString type = bonjourRecords.at(0).registeredType;
-    QString dom = bonjourRecords.at(0).replyDomain;
-    QString service = bonjourRecords.at(0).serviceName;
-    if(type.endsWith("."))
+//    foreach (BonjourRecord br, bonjourRecords) {
+//        QString type = br.registeredType;
+//        QString service = br.serviceName;
+    //TODO check if valid at counter
+        QString type = bonjourRecords.at(counter).registeredType;
+        QString service = bonjourRecords.at(counter).serviceName;
+        if(type.endsWith("."))
+        {
+            type.chop(1);
+        }
+        service.append(".").append(type);
+        qDebug() << "~~~~~~~~~~~~~~~~ Browsing for " << service << "~~~~~~~~~~~~~~~~~~~";
+        QByteArray ba;
+        ba.append(service);
+        browseForServiceType(QLatin1String(ba));
+//        cleanUp();
+//    }
+//    qDebug() << "~~~~~~~~~~~~~~~~ selfmade ~~~~~~~~~~~~~~~~~~~";
+//    browseForServiceType(QLatin1String("_workstation._tcp"));
+}
+
+void BonjourServiceBrowser::cleanUp()
+{
+    if(dnssref)
     {
-        type.chop(1);
+        DNSServiceRefDeallocate(dnssref);
+        dnssref = 0;
+        delete bonjourSocket;
     }
-    service.append(".").append(type);
-    browseForServiceType(service);
 }
 
 void BonjourServiceBrowser::bonjourSocketReadyRead()

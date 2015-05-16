@@ -43,13 +43,15 @@ public:
     void browseForServiceType(const QString &serviceType);
     inline QList<BonjourRecord> currentRecords() const { return bonjourRecords; }
     inline QString serviceType() const { return browsingType; }
-    int browseForFoundServiceTypes();
+    void browseForFoundServiceTypes(int counter);
     QList<BonjourRecord> bonjourRecords;
 
 signals:
     void currentBonjourRecordsChanged(const QList<BonjourRecord> &list);
     void error(DNSServiceErrorType err);
 
+public slots:
+    void cleanUp();
 private slots:
 
     void bonjourSocketReadyRead();

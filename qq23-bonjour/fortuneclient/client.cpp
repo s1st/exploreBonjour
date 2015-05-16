@@ -28,19 +28,20 @@
 #include <QTimer>
 
 Client::Client()
-    :bonjourResolver(0)
 {
     _bonjourBrowser = new BonjourServiceBrowser(this);
-    connect(_bonjourBrowser, SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)),
-            this, SLOT(updateRecords(const QList<BonjourRecord> &)));
-    connect(_bonjourBrowser, SIGNAL(error(DNSServiceErrorType)), _bonjourBrowser, SLOT(handleError(DNSServiceErrorType)));
-    connect(bonjourResolver, SIGNAL(error(DNSServiceErrorType)), bonjourResolver, SLOT(handleError(DNSServiceErrorType)));
-
-    tcpSocket = new QTcpSocket(this);
+    _bonjourResolver = new BonjourServiceResolver(this);
     allRecords = new QList<QVariant>;
-    connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(readFortune()));
-    connect(tcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(displayError(QAbstractSocket::SocketError)));
+    _counter = 0;
+    connect(_bonjourBrowser,    SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)),
+            this, SLOT(updateRecords(const QList<BonjourRecord> &)));
+    connect(_bonjourResolver,   SIGNAL(bonjourRecordResolved(const QHostInfo &)),
+            this, SLOT(listHosts(QHostInfo)));
+    connect(_bonjourBrowser,    SIGNAL(error(DNSServiceErrorType)),                             _bonjourBrowser,    SLOT(handleError(DNSServiceErrorType)));
+    connect(_bonjourResolver,   SIGNAL(error(DNSServiceErrorType)),                             _bonjourResolver,   SLOT(handleError(DNSServiceErrorType)));
+    connect(this,               SIGNAL(foundDevice(QString,BonjourRecord)),                     this,               SLOT(handleDevice(QString, BonjourRecord)));
+    connect(this,               &Client::foundDeviceClass,                                      this,               &Client::handleDeviceClass);
+    connect(this,               &Client::hostFound,                                             this,               &Client::checkResults);
 }
 
 Client::~Client()
@@ -50,46 +51,27 @@ Client::~Client()
 
 int Client::start()
 {
-    _timer = new QTimer(this);
-    connect(_timer, SIGNAL(timeout()), this, SLOT(checkResults()));
-    _timer->start(_interval);
+    QTimer::singleShot(_interval, this, SLOT(checkResults()));
 
-    //    bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
-
-        _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
-
-//        _bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
-
-//        bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
-//        _bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
-        //    bonjourBrowser->browseForServiceType(QLatin1String("_raop._tcp"));
-        return 0;
+    _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
+//    _bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
+//    _bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
+//    _bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
+//    _bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
+//    _bonjourBrowser->browseForServiceType(QLatin1String("_raop._tcp"));
+    return 0;
 }
 
-//void Client::requestNewFortune()
-//{
-//    blockSize = 0;
-//    tcpSocket->abort();
-//    if(allRecords->isEmpty())
-//    {
-//        return;
-//    }
-
-//    if (!bonjourResolver) {
-//        bonjourResolver = new BonjourServiceResolver(this);
-//        connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
-//                this, SLOT(connectToServer(const QHostInfo &, int)));
-//    }
-////    QTreeWidgetItem *item = selectedItems.at(0);
-//    QVariant variant = allRecords->at(0);
-//    bonjourResolver->resolveBonjourRecord(variant.value<BonjourRecord>());
-//}
-
-void Client::connectToServer(const QHostInfo &hostInfo, int port)
+void Client::listHosts(const QHostInfo &hostInfo)
 {
     const QList<QHostAddress> &addresses = hostInfo.addresses();
-    if (!addresses.isEmpty())
-        tcpSocket->connectToHost(addresses.first(), port);
+    QString name = hostInfo.localHostName();
+    qDebug() << "Done\nfound these hosts - " << name << ":";
+    foreach (QHostAddress addr, addresses) {
+        qDebug() << addr.toString();
+    }
+    _counter++;
+    emit hostFound();
 }
 
 void Client::checkResults()
@@ -97,37 +79,22 @@ void Client::checkResults()
     qDebug() << "results after" << _interval << "milliseconds";
     if(!_bonjourBrowser->bonjourRecords.isEmpty())
     {
-        _bonjourBrowser->browseForFoundServiceTypes();
+        _bonjourBrowser->cleanUp();
+        _bonjourBrowser->browseForFoundServiceTypes(_counter);
     }
 }
 
-void Client::readFortune()
+void Client::handleDevice(QString device, BonjourRecord br)
 {
-    //TODO delete
-    //    QDataStream in(tcpSocket);
-    //    in.setVersion(QDataStream::Qt_4_0);
+    qDebug() << "Handling and Resolving:" << device << br.registeredType << br.replyDomain << br.serviceName;
+    //TODO handling centralized, again after 5 sec or so
+//    _bonjourResolver->resolveBonjourRecord(br);
+}
 
-    //    if (blockSize == 0) {
-    //        if (tcpSocket->bytesAvailable() < (int)sizeof(quint16))
-//            return;
-
-//        in >> blockSize;
-//    }
-
-//    if (tcpSocket->bytesAvailable() < blockSize)
-//        return;
-
-//    QString nextFortune;
-//    in >> nextFortune;
-
-//    if (nextFortune == currentFortune) {
-//        QTimer::singleShot(0, this, SLOT(requestNewFortune()));
-//        return;
-//    }
-
-//    currentFortune = nextFortune;
-//    statusLabel->setText(currentFortune);
-//    getFortuneButton->setEnabled(true);
+void Client::handleDeviceClass(QString deviceClass)
+{
+    qDebug() << "handling more devices" << deviceClass;
+//    _bonjourBrowser->browseForServiceType(deviceClass);
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
@@ -149,14 +116,6 @@ void Client::displayError(QAbstractSocket::SocketError socketError)
         qDebug() << "The following error occurred: %1."
                                  << tcpSocket->errorString();
     }
-
-    //getFortuneButton->setEnabled(true);
-}
-
-void Client::enableGetFortuneButton()
-{
-//    getFortuneButton->setEnabled(treeWidget->invisibleRootItem()->childCount() != 0);
-    //TODO delete
 }
 
 void Client::updateRecords(const QList<BonjourRecord> &list)
@@ -166,18 +125,30 @@ void Client::updateRecords(const QList<BonjourRecord> &list)
         QVariant variant;
         variant.setValue(record);
         vars.append(variant);
-        qDebug() << "###########";
-        qDebug() << "type:" << record.registeredType;
-        qDebug() << "domain:" << record.replyDomain;
-        qDebug() << "serviceName:" << record.serviceName;
         allRecords->append(variant);
+        if(record.registeredType == "_tcp." || record.registeredType == "_udp.")
+        {
+            emit foundDeviceClass(record.serviceName
+                                  .append(".")
+                                  .append(record.registeredType));
+        }else{
+            emit foundDevice(record.serviceName
+                             .append(".")
+                             .append(record.registeredType), record);
+        }
     }
-    if (!bonjourResolver) {
-        bonjourResolver = new BonjourServiceResolver(this);
-        connect(bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &, int)),
-                this, SLOT(connectToServer(const QHostInfo &, int)));
-    }
-    QVariant variant = vars.at(0);
-    bonjourResolver->resolveBonjourRecord(variant.value<BonjourRecord>());
-    enableGetFortuneButton();
+//    foreach(QVariant variant, vars)
+//    {
+//        //TODO do not start form the beginning all the time
+//    if(variant.value<BonjourRecord>().registeredType == "_tcp." || variant.value<BonjourRecord>().registeredType == "_udp.")
+//    {
+//        emit foundDeviceClass(variant.value<BonjourRecord>().serviceName
+//                              .append(".")
+//                              .append(variant.value<BonjourRecord>().registeredType));
+//    }else{
+//        emit foundDevice(variant.value<BonjourRecord>().serviceName
+//                         .append(".")
+//                         .append(variant.value<BonjourRecord>().registeredType), variant.value<BonjourRecord>());
+//    }
+//    }
 }
