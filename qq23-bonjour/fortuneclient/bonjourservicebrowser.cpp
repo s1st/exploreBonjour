@@ -33,6 +33,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 BonjourServiceBrowser::BonjourServiceBrowser(QObject *parent)
     : QObject(parent), dnssref(0), bonjourSocket(0)
 {
+    connect(this, SIGNAL(browse(QString)), this, SLOT(browseForServiceType(QString)));
 }
 
 BonjourServiceBrowser::~BonjourServiceBrowser()
@@ -45,10 +46,12 @@ BonjourServiceBrowser::~BonjourServiceBrowser()
 
 void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
 {
-    qDebug() << "browsing for service:" << serviceType;
+    if(dnssref)
+    {
+        qDebug() << "dnssref existing - error - cleanup needed";
+    }
     DNSServiceErrorType err = DNSServiceBrowse(&dnssref, 0, 0, serviceType.toUtf8().constData(), 0,
                                                bonjourBrowseReply, this);
-    qDebug() << "err:" << err;
     if (err != kDNSServiceErr_NoError) {
         emit error(err);
     } else {
@@ -62,27 +65,31 @@ void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
     }
 }
 
-void BonjourServiceBrowser::browseForFoundServiceTypes(int counter)
+void BonjourServiceBrowser::browseForFoundServiceTypes()
 {
-//    foreach (BonjourRecord br, bonjourRecords) {
-//        QString type = br.registeredType;
-//        QString service = br.serviceName;
-    //TODO check if valid at counter
-        QString type = bonjourRecords.at(counter).registeredType;
-        QString service = bonjourRecords.at(counter).serviceName;
-        if(type.endsWith("."))
-        {
-            type.chop(1);
-        }
-        service.append(".").append(type);
-        qDebug() << "~~~~~~~~~~~~~~~~ Browsing for " << service << "~~~~~~~~~~~~~~~~~~~";
-        QByteArray ba;
-        ba.append(service);
-        browseForServiceType(QLatin1String(ba));
-//        cleanUp();
-//    }
-//    qDebug() << "~~~~~~~~~~~~~~~~ selfmade ~~~~~~~~~~~~~~~~~~~";
-//    browseForServiceType(QLatin1String("_workstation._tcp"));
+    QString type = bonjourRecords.at(0).registeredType;
+    QString service = bonjourRecords.at(0).serviceName;
+    if(type.endsWith("."))
+    {
+        type.chop(1);
+    }
+    service.append(".").append(type);
+    QByteArray ba;
+    ba.append(service);
+    if(type == "_tcp" || type == "_udp")
+    {
+        QTimer::singleShot(_interval, this, SLOT(finishBrowseAttempt()));
+        emit browse(QLatin1String(ba));
+    }else{
+        emit finished();
+    }
+}
+
+void BonjourServiceBrowser::finishBrowseAttempt()
+{
+    bonjourRecords.removeFirst();
+    cleanUp();
+    browseForFoundServiceTypes();
 }
 
 void BonjourServiceBrowser::cleanUp()

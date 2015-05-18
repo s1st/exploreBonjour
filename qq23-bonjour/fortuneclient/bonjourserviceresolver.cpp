@@ -50,6 +50,7 @@ void BonjourServiceResolver::cleanupResolve()
         delete bonjourSocket;
         bonjourPort = -1;
     }
+    emit cleanedUp();
 }
 
 void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
@@ -58,8 +59,6 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
         qWarning("resolve in process, aborting");
         return;
     }
-    qDebug() << "resolving record:" << record.registeredType << record.replyDomain << record.serviceName;
-    qDebug() << "dnssref:" << dnssref;
     DNSServiceErrorType err = DNSServiceResolve(&dnssref, 0, 0,
                                                 record.serviceName.toUtf8().constData(),
                                                 record.registeredType.toUtf8().constData(),
@@ -109,19 +108,12 @@ void BonjourServiceResolver::bonjourResolveReply(DNSServiceRef, DNSServiceFlags 
         }
 #endif
     serviceResolver->bonjourPort = port;
-    qDebug() << "hosttarget: " << hosttarget;
     QHostInfo::lookupHost(QString::fromUtf8(hosttarget),
                           serviceResolver, SLOT(finishConnect(const QHostInfo &)));
 }
 
 void BonjourServiceResolver::finishConnect(const QHostInfo &hostInfo)
 {
-    QString name = hostInfo.hostName();
-    QString domain = hostInfo.localDomainName();
-    QString localName = hostInfo.localHostName();
-    int lookupID = hostInfo.lookupId();
-    QList<QHostAddress> addr = hostInfo.addresses();
-    qDebug() << "Found this name: " << name;
     emit bonjourRecordResolved(hostInfo);
     QMetaObject::invokeMethod(this, "cleanupResolve", Qt::QueuedConnection);
 }

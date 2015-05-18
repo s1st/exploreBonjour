@@ -40,30 +40,29 @@ public:
     ~Client();
 
     int start();
-    static const int _interval = 5000;
+    static const int _interval = 800;
 
 private slots:
     void updateRecords(const QList<BonjourRecord> &list);
     void displayError(QAbstractSocket::SocketError socketError);
-    void listHosts(const QHostInfo &hostInfo);
+    void saveHostInformation(const QHostInfo &hostInfo);
     void checkResults();
-    void handleDevice(QString device, BonjourRecord br);
-    void handleDeviceClass(QString deviceClass);
+    void startRecordResolve();
+    void getRecord();
+    void prepareForNextRecord();
+    void displayResults();
 
 signals:
-    void foundDeviceClass(QString deviceClass);
-    void foundDevice(QString device, BonjourRecord br);
-    void hostFound();
+    void hostInfoSaved();
+    void finished();
 
 private:
-    QTimer *_timer;
     QTcpSocket *tcpSocket;
-    QString currentFortune;
     quint16 blockSize;
     BonjourServiceBrowser *_bonjourBrowser;
     BonjourServiceResolver *_bonjourResolver;
-    QList<QVariant> * allRecords;
-    int _counter;
+    QList<BonjourRecord> _allRecords;
+    QMultiMap<QString, QMap<QString, QVariant> > _results;
 };
 
 #endif

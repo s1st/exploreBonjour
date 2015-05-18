@@ -31,6 +31,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtCore/QObject>
 #include <dns_sd.h>
+#include <QTimer>
 #include "bonjourrecord.h"
 
 class QSocketNotifier;
@@ -40,20 +41,24 @@ class BonjourServiceBrowser : public QObject
 public:
     BonjourServiceBrowser(QObject *parent = 0);
     ~BonjourServiceBrowser();
-    void browseForServiceType(const QString &serviceType);
     inline QList<BonjourRecord> currentRecords() const { return bonjourRecords; }
     inline QString serviceType() const { return browsingType; }
-    void browseForFoundServiceTypes(int counter);
     QList<BonjourRecord> bonjourRecords;
+    static const int _interval = 300;
 
 signals:
     void currentBonjourRecordsChanged(const QList<BonjourRecord> &list);
     void error(DNSServiceErrorType err);
+    void browse(QString dev);
+    void finished();
 
 public slots:
+    void browseForServiceType(const QString &serviceType);
     void cleanUp();
-private slots:
+    void browseForFoundServiceTypes();
+    void finishBrowseAttempt();
 
+private slots:
     void bonjourSocketReadyRead();
     void handleError(DNSServiceErrorType err);
 

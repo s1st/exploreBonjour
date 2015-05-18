@@ -50,6 +50,7 @@ public:
 signals:
     void bonjourRecordResolved(const QHostInfo &hostInfo);
     void error(DNSServiceErrorType error);
+    void cleanedUp();
 
 public slots:
 

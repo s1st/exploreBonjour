@@ -31,17 +31,15 @@ Client::Client()
 {
     _bonjourBrowser = new BonjourServiceBrowser(this);
     _bonjourResolver = new BonjourServiceResolver(this);
-    allRecords = new QList<QVariant>;
-    _counter = 0;
-    connect(_bonjourBrowser,    SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)),
-            this, SLOT(updateRecords(const QList<BonjourRecord> &)));
-    connect(_bonjourResolver,   SIGNAL(bonjourRecordResolved(const QHostInfo &)),
-            this, SLOT(listHosts(QHostInfo)));
-    connect(_bonjourBrowser,    SIGNAL(error(DNSServiceErrorType)),                             _bonjourBrowser,    SLOT(handleError(DNSServiceErrorType)));
-    connect(_bonjourResolver,   SIGNAL(error(DNSServiceErrorType)),                             _bonjourResolver,   SLOT(handleError(DNSServiceErrorType)));
-    connect(this,               SIGNAL(foundDevice(QString,BonjourRecord)),                     this,               SLOT(handleDevice(QString, BonjourRecord)));
-    connect(this,               &Client::foundDeviceClass,                                      this,               &Client::handleDeviceClass);
-    connect(this,               &Client::hostFound,                                             this,               &Client::checkResults);
+    connect(_bonjourBrowser,  SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)), this, SLOT(updateRecords(const QList<BonjourRecord> &)));
+    connect(_bonjourBrowser,  SIGNAL(error(DNSServiceErrorType)),                 _bonjourBrowser,      SLOT(handleError(DNSServiceErrorType)));
+    connect(_bonjourResolver, SIGNAL(error(DNSServiceErrorType)),                 _bonjourResolver,     SLOT(handleError(DNSServiceErrorType)));
+    connect(_bonjourBrowser,  SIGNAL(finished()),                                 this,                 SLOT(startRecordResolve()));
+    connect(_bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &)),   this,                 SLOT(saveHostInformation(QHostInfo)));
+    connect(_bonjourResolver, SIGNAL(cleanedUp()),                                this,                 SLOT(prepareForNextRecord())); // TODO not sure with the timing here, maybe c
+                                                                                                                                       // cleanup should wait until save is done
+                                                                                                                                       // -> two signals to wait for: cleanedUp() and hostInfoSaved()
+    connect(this,             SIGNAL(finished()),                                 this,                 SLOT(displayResults()));
 }
 
 Client::~Client()
@@ -52,49 +50,82 @@ Client::~Client()
 int Client::start()
 {
     QTimer::singleShot(_interval, this, SLOT(checkResults()));
-
     _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
-//    _bonjourBrowser->browseForServiceType(QLatin1String("_workstation._tcp"));
-//    _bonjourBrowser->browseForServiceType(QLatin1String("_trollfortune._tcp"));
-//    _bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
-//    _bonjourBrowser->browseForServiceType(QLatin1String("_googlecast._tcp"));
-//    _bonjourBrowser->browseForServiceType(QLatin1String("_raop._tcp"));
     return 0;
 }
 
-void Client::listHosts(const QHostInfo &hostInfo)
+void Client::saveHostInformation(const QHostInfo &hostInfo)
 {
+    BonjourRecord r = _allRecords.first();
+    QMap<QString, QVariant> results;
+    results.insert("registeredType", r.registeredType);
+    results.insert("replyDomain", r.replyDomain);
+    results.insert("serviceName", r.serviceName);
+    results.insert("hostname", hostInfo.hostName());
+    results.insert("lookupId", hostInfo.lookupId());
+
     const QList<QHostAddress> &addresses = hostInfo.addresses();
-    QString name = hostInfo.localHostName();
-    qDebug() << "Done\nfound these hosts - " << name << ":";
     foreach (QHostAddress addr, addresses) {
-        qDebug() << addr.toString();
+        results.insertMulti("ip", addr.toString());
     }
-    _counter++;
-    emit hostFound();
+    _results.insertMulti(r.registeredType, results);
+    emit hostInfoSaved();
 }
 
 void Client::checkResults()
 {
-    qDebug() << "results after" << _interval << "milliseconds";
     if(!_bonjourBrowser->bonjourRecords.isEmpty())
     {
         _bonjourBrowser->cleanUp();
-        _bonjourBrowser->browseForFoundServiceTypes(_counter);
+        _bonjourBrowser->browseForFoundServiceTypes();
+    }else{
+        qDebug() << "no devices found";
     }
 }
 
-void Client::handleDevice(QString device, BonjourRecord br)
+void Client::startRecordResolve()
 {
-    qDebug() << "Handling and Resolving:" << device << br.registeredType << br.replyDomain << br.serviceName;
-    //TODO handling centralized, again after 5 sec or so
-//    _bonjourResolver->resolveBonjourRecord(br);
+    _allRecords = _bonjourBrowser->bonjourRecords;
+    getRecord();
 }
 
-void Client::handleDeviceClass(QString deviceClass)
+void Client::getRecord()
 {
-    qDebug() << "handling more devices" << deviceClass;
-//    _bonjourBrowser->browseForServiceType(deviceClass);
+    if(!_allRecords.isEmpty())
+    {
+        _bonjourResolver->resolveBonjourRecord(_allRecords.first());
+    }else{
+        qDebug() << "Done";
+        emit finished();
+    }
+}
+
+void Client::prepareForNextRecord()
+{
+    _allRecords.removeFirst();
+    getRecord();
+}
+
+void Client::displayResults()
+{
+    QStringList keys = _results.keys();
+    keys = keys.toSet().toList();
+    foreach(QString key, keys)
+    {
+        QList<QMap<QString, QVariant> > membersOfOneClass = _results.values(key);
+        qDebug() << key << ":";
+        QMap<QString, QVariant> m;
+        foreach (m, membersOfOneClass) {
+            qDebug() << "\tregisteredType:" << m.value("registeredType").toString();
+            qDebug() << "\treplyDomain:" << m.value("replyDomain").toString();
+            qDebug() << "\tserviceName:" << m.value("serviceName").toString();
+            qDebug() << "\thostname:" << m.value("hostname").toString();
+            qDebug() << "\tIP:" << m.value("ip").toString();
+            qDebug() << "\thostname:" << m.value("hostname").toString();
+            qDebug() << "\tlookupId:" << m.value("lookupId").toString();
+            qDebug() << "\n";
+        }
+    }
 }
 
 void Client::displayError(QAbstractSocket::SocketError socketError)
@@ -120,35 +151,13 @@ void Client::displayError(QAbstractSocket::SocketError socketError)
 
 void Client::updateRecords(const QList<BonjourRecord> &list)
 {
-    QList<QVariant> vars;
-    foreach (BonjourRecord record, list) {
-        QVariant variant;
-        variant.setValue(record);
-        vars.append(variant);
-        allRecords->append(variant);
+    foreach (BonjourRecord record, list)
+    {
         if(record.registeredType == "_tcp." || record.registeredType == "_udp.")
         {
-            emit foundDeviceClass(record.serviceName
-                                  .append(".")
-                                  .append(record.registeredType));
+            //qDebug() << "handling more devices" << record.registeredType << record.replyDomain << record.serviceName;
         }else{
-            emit foundDevice(record.serviceName
-                             .append(".")
-                             .append(record.registeredType), record);
+            //qDebug() << "Device:" << record.registeredType << record.replyDomain << record.serviceName;
         }
     }
-//    foreach(QVariant variant, vars)
-//    {
-//        //TODO do not start form the beginning all the time
-//    if(variant.value<BonjourRecord>().registeredType == "_tcp." || variant.value<BonjourRecord>().registeredType == "_udp.")
-//    {
-//        emit foundDeviceClass(variant.value<BonjourRecord>().serviceName
-//                              .append(".")
-//                              .append(variant.value<BonjourRecord>().registeredType));
-//    }else{
-//        emit foundDevice(variant.value<BonjourRecord>().serviceName
-//                         .append(".")
-//                         .append(variant.value<BonjourRecord>().registeredType), variant.value<BonjourRecord>());
-//    }
-//    }
 }
