@@ -41,9 +41,9 @@ class BonjourServiceBrowser : public QObject
 public:
     BonjourServiceBrowser(QObject *parent = 0);
     ~BonjourServiceBrowser();
-    inline QList<BonjourRecord> currentRecords() const { return bonjourRecords; }
+    inline QList<BonjourRecord> currentRecords() const { return _bonjourRecords; }
     inline QString serviceType() const { return browsingType; }
-    QList<BonjourRecord> bonjourRecords;
+    QList<BonjourRecord> _bonjourRecords;
     void setInterval(int interval);
 
 signals:

@@ -68,8 +68,16 @@ void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
 
 void BonjourServiceBrowser::browseForFoundServiceTypes()
 {
-    QString type = bonjourRecords.at(0).registeredType;
-    QString service = bonjourRecords.at(0).serviceName;
+    if(_bonjourRecords.isEmpty())
+    {
+        emit finished();
+    }
+    foreach(BonjourRecord b, _bonjourRecords)
+    {
+        qDebug() << b.registeredType << b.replyDomain << b.serviceName;
+    }
+    QString type = _bonjourRecords.at(0).registeredType;
+    QString service = _bonjourRecords.at(0).serviceName;
     if(type.endsWith("."))
     {
         type.chop(1);
@@ -77,10 +85,11 @@ void BonjourServiceBrowser::browseForFoundServiceTypes()
     service.append(".").append(type);
     QByteArray ba;
     ba.append(service);
-    if(type == "_tcp" || type == "_udp")
+    if(type == "_tcp" || type == "_udp" || type == "_dns-sd._udp" ||
+            (type == "_apple-mobdev2._tcp" && service == "_sub"))
     {
         QTimer::singleShot(_interval, this, SLOT(finishBrowseAttempt()));
-        qDebug() << "browsing for: " << ba;
+        qDebug() << "type, sub: " << type << service;
         browseForServiceType(QLatin1String(ba));
 //        emit browse(QLatin1String(ba));
     }else{
@@ -90,7 +99,7 @@ void BonjourServiceBrowser::browseForFoundServiceTypes()
 
 void BonjourServiceBrowser::finishBrowseAttempt()
 {
-    bonjourRecords.removeFirst();
+    _bonjourRecords.removeFirst();
     cleanUp();
     browseForFoundServiceTypes();
 }
@@ -128,13 +137,13 @@ void BonjourServiceBrowser::bonjourBrowseReply(DNSServiceRef , DNSServiceFlags f
     } else {
         BonjourRecord bonjourRecord(serviceName, regType, replyDomain);
         if (flags & kDNSServiceFlagsAdd) {
-            if (!serviceBrowser->bonjourRecords.contains(bonjourRecord))
-                serviceBrowser->bonjourRecords.append(bonjourRecord);
+            if (!serviceBrowser->_bonjourRecords.contains(bonjourRecord))
+                serviceBrowser->_bonjourRecords.append(bonjourRecord);
         } else {
-            serviceBrowser->bonjourRecords.removeAll(bonjourRecord);
+            serviceBrowser->_bonjourRecords.removeAll(bonjourRecord);
         }
         if (!(flags & kDNSServiceFlagsMoreComing)) {
-            emit serviceBrowser->currentBonjourRecordsChanged(serviceBrowser->bonjourRecords);
+            emit serviceBrowser->currentBonjourRecordsChanged(serviceBrowser->_bonjourRecords);
         }
     }
 }

@@ -35,7 +35,6 @@ Client::Client()
     connect(_bonjourBrowser,  SIGNAL(currentBonjourRecordsChanged(const QList<BonjourRecord> &)), this, SLOT(updateRecords(const QList<BonjourRecord> &)));
     connect(_bonjourBrowser,  SIGNAL(error(DNSServiceErrorType)),                 _bonjourBrowser,      SLOT(handleError(DNSServiceErrorType)));
     connect(_bonjourResolver, SIGNAL(error(DNSServiceErrorType)),                 _bonjourResolver,     SLOT(handleError(DNSServiceErrorType)));
-//    connect(_bonjourResolver, SIGNAL(resolveNext()),                              this,                 SLOT(prepareForNextRecord())); maybe not needed
     connect(_bonjourBrowser,  SIGNAL(finished()),                                 this,                 SLOT(startRecordResolve()));
     connect(_bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &)),   this,                 SLOT(saveHostInformation(QHostInfo)));
     connect(_bonjourResolver, SIGNAL(cleanedUp()),                                this,                 SLOT(prepareForNextRecord())); // TODO not sure with the timing here, maybe c
@@ -53,7 +52,6 @@ int Client::start()
 {
     QTimer::singleShot(_exploreInterval, this, SLOT(checkResults()));
     _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
-//    _bonjourBrowser->browseForServiceType(QLatin1String("_apple-mobdev2._tcp"));
     return 0;
 }
 
@@ -77,7 +75,7 @@ void Client::saveHostInformation(const QHostInfo &hostInfo)
 
 void Client::checkResults()
 {
-    if(!_bonjourBrowser->bonjourRecords.isEmpty())
+    if(!_bonjourBrowser->_bonjourRecords.isEmpty())
     {
         _bonjourBrowser->cleanUp();
         _bonjourBrowser->browseForFoundServiceTypes();
@@ -88,7 +86,12 @@ void Client::checkResults()
 
 void Client::startRecordResolve()
 {
-    _allRecords = _bonjourBrowser->bonjourRecords;
+    _allRecords = _bonjourBrowser->_bonjourRecords;
+    foreach(BonjourRecord b, _allRecords)
+    {
+        qDebug() << b.registeredType << b.replyDomain << b.serviceName;
+    }
+
     getRecord();
 }
 
@@ -96,9 +99,9 @@ void Client::getRecord()
 {
     if(!_allRecords.isEmpty())
     {
-//        if(_allRecords.first().registeredType == "_dns-sd._udp." ||
-//           _allRecords.first().registeredType == "_apple-mobdev2._tcp." ||
-//           _allRecords.first().serviceName  == "_odproxy")
+        //TODO maybe get parameter for not searching for iphones->takes long, dns_sd maybe, never brings outcomes
+//        if(_allRecords.first().registeredType == "_apple-mobdev2._tcp.") /*||
+//           _allRecords.first().registeredType == "_dns-sd._udp.")
 //        {
 //            prepareForNextRecord();
 //            return;
@@ -130,13 +133,14 @@ void Client::displayResults()
             qDebug() << "\tregisteredType:" << m.value("registeredType").toString();
             qDebug() << "\treplyDomain:"    << m.value("replyDomain").toString();
             qDebug() << "\tserviceName:"    << m.value("serviceName").toString();
-            qDebug() << "\thostname:"       << m.value("hostname").toString();
             qDebug() << "\tIP:"             << m.value("ip").toString();
             qDebug() << "\thostname:"       << m.value("hostname").toString();
             qDebug() << "\tlookupId:"       << m.value("lookupId").toString();
             qDebug() << "";
         }
     }
+    qDebug() << "Found a total of " << _results.size() << "elements in " << keys.length() << "different categories.";
+    QCoreApplication::exit(0);
 }
 
 void Client::updateRecords(const QList<BonjourRecord> &list)

@@ -59,7 +59,7 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
         qWarning("resolve in process, aborting");
         return;
     }
-    qDebug() << "record: " << record.serviceName << record.registeredType, record.replyDomain;
+    qDebug() << "record: " << record.serviceName << record.registeredType << record.replyDomain;
     DNSServiceErrorType err = DNSServiceResolve(&dnssref, 0, 0,
                                                 record.serviceName.toUtf8().constData(),
                                                 record.registeredType.toUtf8().constData(),
@@ -71,6 +71,7 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
 //                                                     kDNSServiceType_PTR, kDNSServiceClass_IN,
 //                                                     (DNSServiceQueryRecordReply)bonjourResolveReply, this);
                                                      //(DNSServiceQueryRecordReply)bonjourQueryRecordReply, this);
+    qDebug() << err;
     if (err != kDNSServiceErr_NoError) {
         qDebug() << "kDNSServiceErr: " << err;
         emit error(err);
