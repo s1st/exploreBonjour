@@ -51,6 +51,7 @@ signals:
     void bonjourRecordResolved(const QHostInfo &hostInfo);
     void error(DNSServiceErrorType error);
     void cleanedUp();
+//    void resolveNext();
 
 public slots:
 

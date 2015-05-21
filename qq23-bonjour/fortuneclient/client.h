@@ -40,11 +40,11 @@ public:
     ~Client();
 
     int start();
-    static const int _interval = 800;
+    static const int _exploreInterval = 2000;
+    static const int _browseInterval = 300;
 
 private slots:
     void updateRecords(const QList<BonjourRecord> &list);
-    void displayError(QAbstractSocket::SocketError socketError);
     void saveHostInformation(const QHostInfo &hostInfo);
     void checkResults();
     void startRecordResolve();
@@ -57,8 +57,6 @@ signals:
     void finished();
 
 private:
-    QTcpSocket *tcpSocket;
-    quint16 blockSize;
     BonjourServiceBrowser *_bonjourBrowser;
     BonjourServiceResolver *_bonjourResolver;
     QList<BonjourRecord> _allRecords;

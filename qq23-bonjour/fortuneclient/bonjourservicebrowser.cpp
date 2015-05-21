@@ -50,6 +50,7 @@ void BonjourServiceBrowser::browseForServiceType(const QString &serviceType)
     {
         qDebug() << "dnssref existing - error - cleanup needed";
     }
+    qDebug() << "browsing for:" << serviceType;
     DNSServiceErrorType err = DNSServiceBrowse(&dnssref, 0, 0, serviceType.toUtf8().constData(), 0,
                                                bonjourBrowseReply, this);
     if (err != kDNSServiceErr_NoError) {
@@ -79,7 +80,9 @@ void BonjourServiceBrowser::browseForFoundServiceTypes()
     if(type == "_tcp" || type == "_udp")
     {
         QTimer::singleShot(_interval, this, SLOT(finishBrowseAttempt()));
-        emit browse(QLatin1String(ba));
+        qDebug() << "browsing for: " << ba;
+        browseForServiceType(QLatin1String(ba));
+//        emit browse(QLatin1String(ba));
     }else{
         emit finished();
     }
@@ -135,3 +138,9 @@ void BonjourServiceBrowser::bonjourBrowseReply(DNSServiceRef , DNSServiceFlags f
         }
     }
 }
+
+void BonjourServiceBrowser::setInterval(int interval)
+{
+    _interval = interval;
+}
+

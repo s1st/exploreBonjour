@@ -44,7 +44,7 @@ public:
     inline QList<BonjourRecord> currentRecords() const { return bonjourRecords; }
     inline QString serviceType() const { return browsingType; }
     QList<BonjourRecord> bonjourRecords;
-    static const int _interval = 300;
+    void setInterval(int interval);
 
 signals:
     void currentBonjourRecordsChanged(const QList<BonjourRecord> &list);
@@ -69,6 +69,7 @@ private:
     DNSServiceRef dnssref;
     QSocketNotifier *bonjourSocket;
     QString browsingType;
+    int _interval;
 };
 
 #endif // BONJOURSERVICEBROWSER_H

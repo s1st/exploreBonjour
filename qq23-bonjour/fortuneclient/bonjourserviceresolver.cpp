@@ -59,6 +59,7 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
         qWarning("resolve in process, aborting");
         return;
     }
+    qDebug() << "record: " << record.serviceName << record.registeredType, record.replyDomain;
     DNSServiceErrorType err = DNSServiceResolve(&dnssref, 0, 0,
                                                 record.serviceName.toUtf8().constData(),
                                                 record.registeredType.toUtf8().constData(),
@@ -121,4 +122,6 @@ void BonjourServiceResolver::finishConnect(const QHostInfo &hostInfo)
 void BonjourServiceResolver::handleError(DNSServiceErrorType err)
 {
     qDebug() << "Resolver -- handling following error: " << err;
+    cleanupResolve();
+//    emit resolveNext();
 }
