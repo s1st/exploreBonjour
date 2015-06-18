@@ -21,12 +21,12 @@
 **
 ****************************************************************************/
 
-#include "client.h"
+#include "explorer.h"
 
 #include <QtNetwork>
 #include <QTimer>
 
-Client::Client()
+Explorer::Explorer()
 {
     _bonjourBrowser = new BonjourServiceBrowser(this);
     _bonjourResolver = new BonjourServiceResolver(this);
@@ -37,22 +37,34 @@ Client::Client()
     connect(_bonjourBrowser,  SIGNAL(finished()),                                 this,                 SLOT(startRecordResolve()));
     connect(_bonjourResolver, SIGNAL(bonjourRecordResolved(const QHostInfo &)),   this,                 SLOT(saveHostInformation(QHostInfo)));
     connect(_bonjourResolver, SIGNAL(cleanedUp()),                                this,                 SLOT(prepareForNextRecord()));
-    connect(this,             SIGNAL(finished()),                                 this,                 SLOT(displayResults()));
+    //connect(this,             SIGNAL(finished()),                                 this,                 SLOT(displayResults()));
+    connect(this,             SIGNAL(finished()),                                 this,                 SLOT(saveResultsToDB()));
 }
 
-Client::~Client()
+Explorer::~Explorer()
 {
 
 }
 
-int Client::start()
+/*
+ * Starts a timer after which the results of a browsing are checked.
+ * The browse for "_services._dns-sd._udp" returns all service types in a network.
+ */
+
+int Explorer::start()
 {
+//    saveResultsToDB();
     QTimer::singleShot(_exploreInterval, this, SLOT(checkResults()));
     _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
     return 0;
 }
 
-void Client::saveHostInformation(const QHostInfo &hostInfo)
+/*
+ * Saves all found hosts in a QMultiMap<QString, QMap<QString, QVariant> >
+ * with the servicetype as key in the QMultiMap
+ */
+
+void Explorer::saveHostInformation(const QHostInfo &hostInfo)
 {
     BonjourRecord r = _allRecords.first();
     QMap<QString, QVariant> results;
@@ -70,7 +82,11 @@ void Client::saveHostInformation(const QHostInfo &hostInfo)
     emit hostInfoSaved();
 }
 
-void Client::checkResults()
+/*
+ * Checks found servicetypes
+ */
+
+void Explorer::checkResults()
 {
     if(!_bonjourBrowser->_bonjourRecords.isEmpty())
     {
@@ -81,7 +97,7 @@ void Client::checkResults()
     }
 }
 
-void Client::startRecordResolve()
+void Explorer::startRecordResolve()
 {
     _allRecords = _bonjourBrowser->_bonjourRecords;
     foreach(BonjourRecord b, _allRecords)
@@ -92,11 +108,16 @@ void Client::startRecordResolve()
     getRecord();
 }
 
-void Client::getRecord()
+/*
+ * starts the resolving of records if there are any,
+ * else emits finished()
+ */
+
+void Explorer::getRecord()
 {
     if(!_allRecords.isEmpty())
     {
-        //TODO maybe get parameter for not searching for iphones->takes long, dns_sd maybe, never brings outcomes
+//        NOTE get parameter for excluding iphones->takes long, dns_sd maybe, never brings outcomes
 //        if(_allRecords.first().registeredType == "_apple-mobdev2._tcp.") /*||
 //           _allRecords.first().registeredType == "_dns-sd._udp.")
 //        {
@@ -111,13 +132,24 @@ void Client::getRecord()
     }
 }
 
-void Client::prepareForNextRecord()
+/*
+ * Removes first element from allRecords list so getRecord()
+ * moves on with the next element
+ */
+
+void Explorer::prepareForNextRecord()
 {
     _allRecords.removeFirst();
     getRecord();
 }
 
-void Client::displayResults()
+/*
+ * Deprecated:
+ * Dispays elememts in groups with the registeredTape as header.
+ * Now the saveResultsToDB() is used to save data to elasticsearch
+ */
+
+void Explorer::displayResults()
 {
     QStringList keys = _results.keys();
     keys = keys.toSet().toList();
@@ -137,10 +169,76 @@ void Client::displayResults()
         }
     }
     qDebug() << "Found a total of " << _results.size() << "elements in " << keys.length() << "different categories.";
-    QCoreApplication::exit(0);
 }
 
-void Client::updateRecords(const QList<BonjourRecord> &list)
+/*
+ * Saves the results to an elasticsearch
+ * via QNetworkAccessManager::post() and http
+ * the results are sent. A timestamp, which is needed for elasticsearch
+ * is added, too.
+ */
+
+void Explorer::saveResultsToDB()
+{
+    QNetworkAccessManager *nam = new QNetworkAccessManager();
+    QNetworkRequest req;
+    req.setHeader(QNetworkRequest::ContentTypeHeader,QVariant("application/x-www-form-urlencoded"));
+    req.setUrl(QUrl(_db_url));
+    QDateTime dateTime = QDateTime::currentDateTime();
+    dateTime = dateTime.addSecs(-60);
+    QString date = dateTime.toString("yyyy-M-d");
+    QString time = dateTime.toString("hh:mm:ss");
+    QString formattedDateTime = date.append("T").append(time);
+
+    QStringList keys = _results.keys();
+    keys = keys.toSet().toList();
+    foreach(QString key, keys)
+    {
+        QList<QMap<QString, QVariant> > membersOfOneClass = _results.values(key);
+        QMap<QString, QVariant> m;
+        foreach(m, membersOfOneClass)
+        {
+            QJsonObject *obj = new QJsonObject();
+            obj->insert("post_date", formattedDateTime);
+            obj->insert("registeredType", m.value("registeredType").toString());
+            obj->insert("replyDomain", m.value("replyDomain").toString());
+            obj->insert("ip", m.value("ip").toString());
+            obj->insert("hostname", m.value("hostname").toString());
+            obj->insert("lookupId", m.value("lookupId").toString());
+            QJsonDocument doc(*obj);
+            QString jsonString = doc.toJson(QJsonDocument::Compact);
+            QByteArray data;
+            data.append(jsonString);
+            _rep = nam->post(req, data);
+        }
+    }
+    connect(_rep, SIGNAL(readyRead()), this, SLOT(readAnswer()));
+    qDebug() << "Found a total of " << _results.size() << "elements in " << keys.length() << "different categories.";
+    //QCoreApplication::exit(0);
+}
+
+/*
+ * Check if the results were saved successfully
+ * and end the application
+ */
+
+void Explorer::readAnswer()
+{
+    QByteArray ba = _rep->readAll();
+    if(ba.contains("\"created\":true")){
+        qDebug() << "Successful: reply from server: " << ba;
+        QCoreApplication::exit(0);
+    }else if(ba.contains("\"created\":false")){
+        qDebug() << "Unsuccessful: reply from server: " << ba;
+        QCoreApplication::exit(-1);
+    }
+}
+
+/*
+ * Deprecated
+ */
+
+void Explorer::updateRecords(const QList<BonjourRecord> &list)
 {
     foreach (BonjourRecord record, list)
     {
