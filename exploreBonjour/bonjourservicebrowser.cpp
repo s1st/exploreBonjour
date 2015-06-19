@@ -91,7 +91,6 @@ void BonjourServiceBrowser::browseForFoundServiceTypes()
         QTimer::singleShot(_interval, this, SLOT(finishBrowseAttempt()));
         qDebug() << "type, sub: " << type << service;
         browseForServiceType(QLatin1String(ba));
-//        emit browse(QLatin1String(ba));
     }else{
         emit finished();
     }

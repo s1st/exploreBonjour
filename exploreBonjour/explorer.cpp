@@ -53,7 +53,6 @@ Explorer::~Explorer()
 
 int Explorer::start()
 {
-//    saveResultsToDB();
     QTimer::singleShot(_exploreInterval, this, SLOT(checkResults()));
     _bonjourBrowser->browseForServiceType(QLatin1String("_services._dns-sd._udp"));
     return 0;
@@ -184,11 +183,7 @@ void Explorer::saveResultsToDB()
     QNetworkRequest req;
     req.setHeader(QNetworkRequest::ContentTypeHeader,QVariant("application/x-www-form-urlencoded"));
     req.setUrl(QUrl(_db_url));
-    QDateTime dateTime = QDateTime::currentDateTime();
-    dateTime = dateTime.addSecs(-60);
-    QString date = dateTime.toString("yyyy-M-d");
-    QString time = dateTime.toString("hh:mm:ss");
-    QString formattedDateTime = date.append("T").append(time);
+    QString formattedDateTime = QDateTime::currentDateTime().toUTC().toString(Qt::ISODate);
 
     QStringList keys = _results.keys();
     keys = keys.toSet().toList();
@@ -213,8 +208,7 @@ void Explorer::saveResultsToDB()
         }
     }
     connect(_rep, SIGNAL(readyRead()), this, SLOT(readAnswer()));
-    qDebug() << "Found a total of " << _results.size() << "elements in " << keys.length() << "different categories.";
-    //QCoreApplication::exit(0);
+    qDebug() << "Found a total of " << _results.size() << "elements in " << keys.length() << "different categories" << "at" << formattedDateTime << "UTC";
 }
 
 /*

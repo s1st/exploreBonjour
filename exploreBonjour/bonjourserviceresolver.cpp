@@ -69,7 +69,6 @@ void BonjourServiceResolver::resolveBonjourRecord(const BonjourRecord &record)
                                                 record.registeredType.toUtf8().constData(),
                                                 record.replyDomain.toUtf8().constData(),
                                                 (DNSServiceResolveReply)bonjourResolveReply, this);
-    qDebug() << err;
     if (err != kDNSServiceErr_NoError) {
         qDebug() << "kDNSServiceErr: " << err;
         emit error(err);
