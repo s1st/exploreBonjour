@@ -44,7 +44,7 @@
 #include <QNetworkReply>
 
 /*
- * Url for database running on port 9200
+ * Url for elasticsearch database running on port 9200
  * with the index bonjour and the type
  * b_entry:
  * "http://localhost:9200/bonjour/b_entry"
