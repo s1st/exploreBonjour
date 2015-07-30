@@ -10,7 +10,5 @@ SOURCES       = \
 		explorer.cpp
 QT           += network widgets
 
-CONFIG += release
 LIBS += -ldns_sd
 INCLUDEPATH += /usr/lib/x86_64-linux-gnu/
-exploreBonjour.pro.user

@@ -92,6 +92,7 @@ void BonjourServiceBrowser::browseForFoundServiceTypes()
         qDebug() << "type, sub: " << type << service;
         browseForServiceType(QLatin1String(ba));
     }else{
+        qDebug() << ">>Aborting: type, sub: " << type << service;
         emit finished();
     }
 }

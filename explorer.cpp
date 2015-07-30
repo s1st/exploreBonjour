@@ -116,13 +116,16 @@ void Explorer::getRecord()
 {
     if(!_allRecords.isEmpty())
     {
-//        NOTE get parameter for excluding iphones->takes long, dns_sd maybe, never brings outcomes
-//        if(_allRecords.first().registeredType == "_apple-mobdev2._tcp.") /*||
-//           _allRecords.first().registeredType == "_dns-sd._udp.")
-//        {
-//            prepareForNextRecord();
-//            return;
-//        }
+        /* NOTE parameter for excluding iphones or dns_sd -> these take long,
+         * often result in timeouts
+         */
+
+        /* if(_allRecords.first().registeredType == "_apple-mobdev2._tcp.") ||
+           _allRecords.first().registeredType == "_dns-sd._udp.")
+        {
+            prepareForNextRecord();
+            return;
+        }*/
         _bonjourResolver->resolveBonjourRecord(_allRecords.first());
 
     }else{
